@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulación de Gravedad con Three.js</title>
+  <style>
+    body { margin: 0; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+  <script>
+    // Aquí va el código JavaScript
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 20;
+    camera.position.x = 0;
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    var deltaT = 0.001;
+    var numIteraciones = 1000;
+    var G = 6.67430e-11;
+    var cantidadPuntos = 5;
+    var distanciaCuboPuntosMin = -10;
+    var distanciaCuboPuntosMax = 10;
+    
+    
+  function generarPuntosAleatorios(cantidadPuntos, rangoMin, rangoMax) {
+    var puntos = [];
+    for (var i = 0; i < cantidadPuntos; i++) {
+      var punto = {
+        masa: Math.random() * (10000000 - 100000) + 100000,
+        x: Math.random() * (rangoMax - rangoMin) + rangoMin,
+        y: Math.random() * (rangoMax - rangoMin) + rangoMin,
+        z: Math.random() * (rangoMax - rangoMin) + rangoMin, vx: 0.01, vy: 0,vz: 0
+      };
+      puntos.push(punto);
+    }
+    return puntos;
+  }
+  var puntos = generarPuntosAleatorios(cantidadPuntos, distanciaCuboPuntosMin, distanciaCuboPuntosMax);
+
+  function crearPuntos() {
+    var geometry = new THREE.SphereGeometry(0.05, 3, 3);
+    var material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+
+    return puntos.map(function(punto) {
+      var sphere = new THREE.Mesh(geometry, material);
+      sphere.position.set(punto.x, punto.y, punto.z);
+      scene.add(sphere);
+      return sphere;
+    });
+  }
+  function actualizarPosicionYVelocidad(punto) {
+    punto.x += punto.vx * deltaT;
+    punto.y += punto.vy * deltaT;
+    punto.z += punto.vz * deltaT;
+  }
+
+// Función para aplicar la fuerza gravitatoria entre dos puntos
+  function aplicarFuerzaGravitatoria(p1, p2) {
+    var dx = p2.x - p1.x;
+    var dy = p2.y - p1.y;
+    var dz = p2.z - p1.z;
+    var distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    var fuerza = (G * p1.masa * p2.masa) / (distancia * distancia);
+
+    var fx = fuerza * (dx / distancia);
+    var fy = fuerza * (dy / distancia);
+    var fz = fuerza * (dz / distancia);
+
+    p1.vx += fx / p1.masa;
+    p1.vy += fy / p1.masa;
+    p1.vz += fz / p1.masa;
+    p2.vx -= fx / p2.masa;
+    p2.vy -= fy / p2.masa;
+    p2.vz -= fz / p2.masa;
+  }
+
+  function simularGravedad() {
+    for (var i = 0; i < numIteraciones; i++) {
+      for (var j = 0; j < puntos.length; j++) {
+        var p1 = puntos[j];
+        for (var k = j + 1; k < puntos.length; k++) {
+          var p2 = puntos[k];
+          aplicarFuerzaGravitatoria(p1, p2);
+        }
+      }
+
+      for (var j = 0; j < puntos.length; j++) {
+        var punto = puntos[j];
+        actualizarPosicionYVelocidad(punto);
+        puntoObjetos[j].position.set(punto.x, punto.y, punto.z);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // Solicitar la siguiente animación de fotograma
+    requestAnimationFrame(simularGravedad);
+  }
+  var puntoObjetos = crearPuntos();
+  
+  requestAnimationFrame(simularGravedad);
+  </script>
+</body>
+</html>
+
