@@ -11,63 +11,69 @@
 <body>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
   <script>
-    // Aquí va el código JavaScript
-    var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 20;
-    camera.position.x = 0;
-    var renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-    var deltaT = 0.001;
-    var numIteraciones = 1000;
-    var G = 6.67430e-11;
-    var cantidadPuntos = 5;
-    var distanciaCuboPuntosMin = -10;
-    var distanciaCuboPuntosMax = 10;
-    
-    
+  var deltaT = 0.001;
+  var numIteraciones = 1000;
+  var G = 6.67430e-11;
+  var cantidadPuntos = 20;
+  var distanciaCuboPuntosMin = -10;
+  var distanciaCuboPuntosMax = 10;
+  var minMasa = 100000;
+  var maxMasa = 10000000;
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  var renderer = new THREE.WebGLRenderer();
+
+  camera.position.z = 20;
+  camera.position.x = 0;
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  function generarColorHexadecimalAleatorio() {
+  const valorMaximo = 16777215; // 0xFFFFFF en decimal
+  const colorHexadecimal = Math.floor(Math.random() * (valorMaximo + 1));
+
+  return colorHexadecimal;
+  }
+
+  function getRand(min,max){
+    return Math.random() * (max - min) + min;
+  }
+
   function generarPuntosAleatorios(cantidadPuntos, rangoMin, rangoMax) {
     var puntos = [];
     for (var i = 0; i < cantidadPuntos; i++) {
-      var punto = {
-        masa: Math.random() * (10000000 - 100000) + 100000,
-        x: Math.random() * (rangoMax - rangoMin) + rangoMin,
-        y: Math.random() * (rangoMax - rangoMin) + rangoMin,
-        z: Math.random() * (rangoMax - rangoMin) + rangoMin, vx: 0.01, vy: 0,vz: 0
-      };
+      var punto = {masa: getRand(minMasa, maxMasa),x: getRand(rangoMin, rangoMax),y: getRand(rangoMin, rangoMax),z: getRand(rangoMin, rangoMax), vx: 0.01, vy: 0,vz: 0};
       puntos.push(punto);
     }
     return puntos;
   }
-  var puntos = generarPuntosAleatorios(cantidadPuntos, distanciaCuboPuntosMin, distanciaCuboPuntosMax);
 
-  function crearPuntos() {
+  function crearPuntos(puntos) {
     var geometry = new THREE.SphereGeometry(0.05, 3, 3);
-    var material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    //var material = new THREE.MeshBasicMaterial({ color: generarColorHexadecimalAleatorio() });
 
     return puntos.map(function(punto) {
+      var material = new THREE.MeshBasicMaterial({ color: generarColorHexadecimalAleatorio() });
       var sphere = new THREE.Mesh(geometry, material);
       sphere.position.set(punto.x, punto.y, punto.z);
       scene.add(sphere);
       return sphere;
     });
   }
+
   function actualizarPosicionYVelocidad(punto) {
     punto.x += punto.vx * deltaT;
     punto.y += punto.vy * deltaT;
     punto.z += punto.vz * deltaT;
   }
 
-// Función para aplicar la fuerza gravitatoria entre dos puntos
   function aplicarFuerzaGravitatoria(p1, p2) {
     var dx = p2.x - p1.x;
     var dy = p2.y - p1.y;
     var dz = p2.z - p1.z;
     var distancia = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
     var fuerza = (G * p1.masa * p2.masa) / (distancia * distancia);
-
     var fx = fuerza * (dx / distancia);
     var fy = fuerza * (dy / distancia);
     var fz = fuerza * (dz / distancia);
@@ -82,6 +88,7 @@
 
   function simularGravedad() {
     for (var i = 0; i < numIteraciones; i++) {
+      //console.log(i);
       for (var j = 0; j < puntos.length; j++) {
         var p1 = puntos[j];
         for (var k = j + 1; k < puntos.length; k++) {
@@ -89,23 +96,21 @@
           aplicarFuerzaGravitatoria(p1, p2);
         }
       }
-
       for (var j = 0; j < puntos.length; j++) {
         var punto = puntos[j];
         actualizarPosicionYVelocidad(punto);
         puntoObjetos[j].position.set(punto.x, punto.y, punto.z);
       }
-
       renderer.render(scene, camera);
     }
-
-    // Solicitar la siguiente animación de fotograma
+    console.log("Reiterando");
     requestAnimationFrame(simularGravedad);
   }
-  var puntoObjetos = crearPuntos();
-  
+
+  var puntos = generarPuntosAleatorios(cantidadPuntos, distanciaCuboPuntosMin, distanciaCuboPuntosMax);
+  var puntoObjetos = crearPuntos(puntos);
+
   requestAnimationFrame(simularGravedad);
   </script>
 </body>
 </html>
-
